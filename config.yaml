@@ -1,0 +1,82 @@
+run:
+  run_dir: "./runs/cpt_run_v1"
+  seed: 42
+
+model:
+  # Local model path (no download)
+  repo_id: "/home/aviinashh/projects/sft-play/models/qwen2.5-3b"
+  revision: null
+
+  # Used only when repo_id is a HF repo (not a local path)
+  base_local_dir: "base_model"
+
+  trust_remote_code: true
+  tokenizer_use_fast: true
+  device_map: "auto"
+
+  torch_dtype: "bfloat16"  # "float16" | "bfloat16" | "float32"
+
+  # QLoRA
+  use_4bit: false
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: false
+  bnb_4bit_compute_dtype: "bfloat16"
+
+  # optional: "flash_attention_2" | "sdpa" | null
+  attn_implementation: null
+
+data:
+  train_jsonl: "/home/aviinashh/projects/Trainer-Kit/dummy_data.jsonl"
+  eval_jsonl: null
+  eval_split_ratio: 0.1
+  text_field: "text"
+  block_size: 1024
+  shuffle: true
+  num_proc: 4
+
+  # ✅ NEW: packing behavior
+  # "drop" = strict CPT (drop remainder)
+  # "pad"  = pad remainder to block_size + loss mask (-100) + attention_mask=0
+  pack_mode: "pad"
+
+peft:
+  enabled: true
+  r: 64
+  lora_alpha: 128
+  lora_dropout: 0.05
+  bias: "none"
+  target_modules: "auto"
+
+train:
+  max_steps: 20
+  num_train_epochs: 2
+
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16
+
+  learning_rate: 5e-5
+  weight_decay: 0.0
+  warmup_ratio: 0.01
+  lr_scheduler_type: "cosine"
+
+  optim: "paged_adamw_8bit"
+  max_grad_norm: 1.0
+  gradient_checkpointing: true
+
+  logging_steps: 1
+  save_strategy: "steps"
+  save_steps: 10
+  save_total_limit: 3
+
+  evaluation_strategy: "steps"
+  eval_steps: 2
+  load_best_model_at_end: true
+
+  resume_from_checkpoint: "auto"
+
+merge:
+  enabled: false
+  merged_dtype: "float16"
+  max_shard_size: "2GB"
+  output_dir: "./merged_model"
